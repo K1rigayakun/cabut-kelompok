@@ -7,20 +7,23 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
   <div class="container">
 
     <div class="card">
       <h1>Cabut Nomor Kelompok</h1>
-      <p class="subtitle">Masukkan NIM format: <b>??1712???</b></p>
+      <p class="subtitle">
+        Masukkan NIM format: <b>??1712???</b>
+      </p>
 
-      <input id="nim" placeholder="Contoh: AB1712XYZ" />
+      <input id="nim" placeholder="Contoh: AB1712XYZ" autocomplete="off"/>
       <button id="btnDraw">Cabut Nomor</button>
 
       <div id="result" class="result hidden"></div>
     </div>
 
     <div class="card">
-      <h2>Daftar Kelompok</h2>
+      <h2>Daftar Kelompok (Realtime)</h2>
       <div id="groupsTable"></div>
     </div>
 
@@ -29,6 +32,7 @@
     </div>
 
   </div>
+
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="script.js"></script>
 </body>

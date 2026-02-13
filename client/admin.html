@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
   <div class="container">
 
     <div class="card">
@@ -18,16 +19,18 @@
       </div>
 
       <div id="adminBox" class="hidden">
-        <h2>Settings</h2>
+        <h2>Pengaturan Kelompok</h2>
 
         <label>Jumlah Kelompok</label>
         <input id="groups" type="number" min="1"/>
 
-        <label>Maks Anggota per Kelompok</label>
+        <label>Maksimal Anggota per Kelompok</label>
         <input id="maxPerGroup" type="number" min="1"/>
 
         <button id="btnSave">Save & Generate Slot</button>
         <button id="btnReset" class="danger">Reset Semua Data</button>
+
+        <a id="btnExport" class="export-btn" href="#">Export Excel</a>
       </div>
 
       <div id="adminMsg" class="result hidden"></div>

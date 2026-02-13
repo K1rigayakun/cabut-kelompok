@@ -1,9 +1,32 @@
-const API_URL = "https://cabut-kelompok.onrender.com" // ganti
+const API_URL = "https://cabut-kelompok.onrender.com" // GANTI INI
 
 function showMsg(msg) {
   const box = document.getElementById("adminMsg")
   box.classList.remove("hidden")
   box.innerText = msg
+}
+
+async function loadSettings() {
+  const token = localStorage.getItem("adminToken")
+
+  const res = await fetch(API_URL + "/admin/settings", {
+    headers: { Authorization: "Bearer " + token }
+  })
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    showMsg("❌ Token invalid, login ulang")
+    localStorage.removeItem("adminToken")
+    return
+  }
+
+  document.getElementById("groups").value = data.groups
+  document.getElementById("maxPerGroup").value = data.maxPerGroup
+
+  // export link
+  document.getElementById("btnExport").href =
+    API_URL + "/admin/export"
 }
 
 document.getElementById("btnLogin").addEventListener("click", async () => {
@@ -28,22 +51,8 @@ document.getElementById("btnLogin").addEventListener("click", async () => {
   document.getElementById("adminBox").classList.remove("hidden")
 
   showMsg("✅ Login sukses")
-
   loadSettings()
 })
-
-async function loadSettings() {
-  const token = localStorage.getItem("adminToken")
-
-  const res = await fetch(API_URL + "/admin/settings", {
-    headers: { Authorization: "Bearer " + token }
-  })
-
-  const data = await res.json()
-
-  document.getElementById("groups").value = data.groups
-  document.getElementById("maxPerGroup").value = data.maxPerGroup
-}
 
 document.getElementById("btnSave").addEventListener("click", async () => {
   const token = localStorage.getItem("adminToken")
@@ -67,7 +76,7 @@ document.getElementById("btnSave").addEventListener("click", async () => {
     return
   }
 
-  showMsg("✅ Slot berhasil digenerate ulang!")
+  showMsg("✅ " + data.message)
 })
 
 document.getElementById("btnReset").addEventListener("click", async () => {
@@ -77,9 +86,7 @@ document.getElementById("btnReset").addEventListener("click", async () => {
 
   const res = await fetch(API_URL + "/admin/reset", {
     method: "POST",
-    headers: {
-      Authorization: "Bearer " + token
-    }
+    headers: { Authorization: "Bearer " + token }
   })
 
   const data = await res.json()
@@ -89,5 +96,12 @@ document.getElementById("btnReset").addEventListener("click", async () => {
     return
   }
 
-  showMsg("🗑 Semua data berhasil direset")
+  showMsg("🗑 " + data.message)
 })
+
+// auto detect token
+if (localStorage.getItem("adminToken")) {
+  document.getElementById("loginBox").classList.add("hidden")
+  document.getElementById("adminBox").classList.remove("hidden")
+  loadSettings()
+}

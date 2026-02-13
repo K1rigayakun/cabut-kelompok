@@ -1,4 +1,4 @@
-const API_URL = "https://CABUT-KAMU.onrender.com"
+const API_URL = "https://cabut-kelompok.onrender.com" // GANTI INI
 
 function getDeviceId() {
   let id = localStorage.getItem("deviceId")
@@ -22,7 +22,7 @@ async function loadGroups() {
   document.getElementById("groupsTable").innerHTML = html
 }
 
-// SOCKET realtime
+// realtime socket
 const socket = io(API_URL)
 
 socket.on("connect", () => {
@@ -41,21 +41,24 @@ document.getElementById("btnDraw").addEventListener("click", async () => {
   resultBox.classList.remove("hidden")
   resultBox.innerText = "Mengacak nomor..."
 
-  const res = await fetch(API_URL + "/draw", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nim, deviceId })
-  })
+  try {
+    const res = await fetch(API_URL + "/draw", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nim, deviceId })
+    })
 
-  const data = await res.json()
+    const data = await res.json()
 
-  if (!res.ok) {
-    resultBox.innerText = "Error: " + data.error
-    return
+    if (!res.ok) {
+      resultBox.innerText = "❌ " + data.error
+      return
+    }
+
+    resultBox.innerText = `✅ ${nim} masuk Kelompok ${data.group}`
+  } catch (err) {
+    resultBox.innerText = "⏳ Server lagi bangun (Render sleep), coba lagi..."
   }
-
-  resultBox.innerText = `✅ ${nim} masuk Kelompok ${data.group}`
 })
 
-// load awal
 loadGroups()

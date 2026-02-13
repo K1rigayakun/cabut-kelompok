@@ -16,22 +16,22 @@ router.post("/", async (req, res) => {
     }
 
     if (!nimRegex.test(nim)) {
-      return res.status(400).json({ error: "Format NIM salah" })
+      return res.status(400).json({ error: "Format NIM salah (??1712???)" })
     }
 
-    // kalau nim sudah ada -> return kelompok
+    // nim sudah pernah -> return kelompok
     const existingStudent = await Student.findOne({ nim })
     if (existingStudent) {
       return res.json({ group: existingStudent.group, status: "existing" })
     }
 
-    // cek device udah pernah daftar
+    // device sudah pernah cabut -> reject
     const existingDevice = await Device.findOne({ deviceId })
     if (existingDevice) {
       return res.status(403).json({ error: "Device sudah pernah cabut" })
     }
 
-    // ambil slot pertama yg belum diambil
+    // ambil slot pertama yg available (atomic)
     const slot = await Slot.findOneAndUpdate(
       { taken: false },
       { taken: true },
@@ -42,14 +42,16 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Slot habis" })
     }
 
-    // simpan student
     const student = await Student.create({
       nim,
       group: slot.group
     })
 
-    // simpan device lock
     await Device.create({ deviceId, nim })
+
+    // realtime update
+    const io = req.app.get("io")
+    io.emit("updateGroups")
 
     res.json({ group: student.group, status: "new" })
   } catch (err) {
@@ -60,7 +62,7 @@ router.post("/", async (req, res) => {
 
 // GET GROUP TABLE
 router.get("/groups", async (req, res) => {
-  const students = await Student.find().sort({ group: 1 })
+  const students = await Student.find().sort({ group: 1 }).lean()
   res.json(students)
 })
 

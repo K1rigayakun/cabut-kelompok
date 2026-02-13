@@ -1,7 +1,7 @@
 const mongoose = require("mongoose")
 
 const slotSchema = new mongoose.Schema({
-  order: Number,
+  order: { type: Number, unique: true },
   group: Number,
   taken: { type: Boolean, default: false }
 })

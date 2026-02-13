@@ -25,16 +25,14 @@ app.get("/", (req, res) => {
   res.send("API running")
 })
 
-// buat server HTTP
+// HTTP Server + Socket.IO
 const server = http.createServer(app)
-
-// socket.io
 const { Server } = require("socket.io")
+
 const io = new Server(server, {
   cors: { origin: "*" }
 })
 
-// simpan io ke app biar bisa dipake di routes
 app.set("io", io)
 
 io.on("connection", socket => {
