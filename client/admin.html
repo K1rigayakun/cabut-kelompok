@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+
+    <div class="card">
+      <h1>Admin Panel</h1>
+
+      <div id="loginBox">
+        <input id="password" type="password" placeholder="Admin password"/>
+        <button id="btnLogin">Login</button>
+      </div>
+
+      <div id="adminBox" class="hidden">
+        <h2>Settings</h2>
+
+        <label>Jumlah Kelompok</label>
+        <input id="groups" type="number" min="1"/>
+
+        <label>Maks Anggota per Kelompok</label>
+        <input id="maxPerGroup" type="number" min="1"/>
+
+        <button id="btnSave">Save & Generate Slot</button>
+        <button id="btnReset" class="danger">Reset Semua Data</button>
+      </div>
+
+      <div id="adminMsg" class="result hidden"></div>
+    </div>
+
+    <div class="footer">
+      <a href="index.html">← Kembali</a>
+    </div>
+
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

@@ -1,95 +1,61 @@
-const API_URL = "http://localhost:3000"; // nanti diganti pas hosting
+const API_URL = "https://CABUT-KAMU.onrender.com"
 
-// bikin deviceId unik (disimpan supaya device ga bisa daftar ulang)
 function getDeviceId() {
-  let deviceId = localStorage.getItem("deviceId");
-  if (!deviceId) {
-    deviceId = "device-" + Math.random().toString(36).substring(2) + Date.now();
-    localStorage.setItem("deviceId", deviceId);
+  let id = localStorage.getItem("deviceId")
+  if (!id) {
+    id = crypto.randomUUID()
+    localStorage.setItem("deviceId", id)
   }
-  return deviceId;
+  return id
 }
 
-const drawBtn = document.getElementById("drawBtn");
-const nimInput = document.getElementById("nimInput");
-const resultText = document.getElementById("resultText");
-const errorText = document.getElementById("errorText");
-const groupTable = document.getElementById("groupTable");
+async function loadGroups() {
+  const res = await fetch(API_URL + "/draw/groups")
+  const data = await res.json()
 
-// ambil data kelompok dari backend (kita buat endpointnya nanti)
-async function fetchGroups() {
-  const res = await fetch(`${API_URL}/groups`);
-  const data = await res.json();
-  renderGroups(data);
+  let html = "<table><tr><th>NIM</th><th>Kelompok</th></tr>"
+  data.forEach(s => {
+    html += `<tr><td>${s.nim}</td><td>${s.group}</td></tr>`
+  })
+  html += "</table>"
+
+  document.getElementById("groupsTable").innerHTML = html
 }
 
-function renderGroups(groups) {
-  groupTable.innerHTML = "";
+// SOCKET realtime
+const socket = io(API_URL)
 
-  for (let i = 1; i <= 7; i++) {
-    const members = groups[i] || [];
+socket.on("connect", () => {
+  console.log("Socket connected:", socket.id)
+})
 
-    const card = document.createElement("div");
-    card.className = "border rounded-lg p-4 bg-gray-50";
+socket.on("updateGroups", () => {
+  loadGroups()
+})
 
-    card.innerHTML = `
-      <h3 class="font-bold text-lg mb-2">Kelompok ${i}</h3>
-      <ul class="text-sm space-y-1">
-        ${members.length === 0 ? "<li class='text-gray-400'>Belum ada anggota</li>" :
-          members.map(m => `<li>• ${m}</li>`).join("")
-        }
-      </ul>
-      <p class="mt-2 text-xs text-gray-500">(${members.length}/6 anggota)</p>
-    `;
+document.getElementById("btnDraw").addEventListener("click", async () => {
+  const nim = document.getElementById("nim").value.trim()
+  const deviceId = getDeviceId()
 
-    groupTable.appendChild(card);
-  }
-}
+  const resultBox = document.getElementById("result")
+  resultBox.classList.remove("hidden")
+  resultBox.innerText = "Mengacak nomor..."
 
-// event cabut nomor
-drawBtn.addEventListener("click", async () => {
-  errorText.textContent = "";
-  resultText.textContent = "";
+  const res = await fetch(API_URL + "/draw", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nim, deviceId })
+  })
 
-  const nim = nimInput.value.trim();
-  if (!nim) {
-    errorText.textContent = "Masukkan NIM dulu!";
-    return;
+  const data = await res.json()
+
+  if (!res.ok) {
+    resultBox.innerText = "Error: " + data.error
+    return
   }
 
-  try {
-    drawBtn.disabled = true;
-    drawBtn.textContent = "Mengacak...";
-
-    const res = await fetch(`${API_URL}/draw`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nim,
-        deviceId: getDeviceId()
-      })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      errorText.textContent = data.error || "Terjadi error";
-      return;
-    }
-
-    resultText.textContent = `🎉 Kamu masuk Kelompok ${data.group}!`;
-    fetchGroups();
-
-  } catch (err) {
-    errorText.textContent = "Server tidak bisa diakses!";
-  } finally {
-    drawBtn.disabled = false;
-    drawBtn.textContent = "Cabut Nomor";
-  }
-});
-
-// refresh tabel realtime tiap 3 detik
-setInterval(fetchGroups, 3000);
+  resultBox.innerText = `✅ ${nim} masuk Kelompok ${data.group}`
+})
 
 // load awal
-fetchGroups();
+loadGroups()

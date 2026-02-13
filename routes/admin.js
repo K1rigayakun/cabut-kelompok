@@ -1,80 +1,83 @@
 const express = require("express")
 const router = express.Router()
+const jwt = require("jsonwebtoken")
+
 const Slot = require("../models/Slot")
 const Student = require("../models/Student")
-const shuffle = require("../utils/shuffle")
-const ExcelJS = require("exceljs")
+const Device = require("../models/Device")
+const Settings = require("../models/Settings")
+const shuffleCrypto = require("../utils/shuffleCrypto")
 
-// INIT SLOT (acak 7 kelompok x 6 slot = 42)
-router.get("/init", async (req, res) => {
-  try {
-    await Slot.deleteMany()
+const authAdmin = require("../middleware/authAdmin")
 
-    let slots = []
+// LOGIN ADMIN
+router.post("/login", (req, res) => {
+  const { password } = req.body
 
-    for (let i = 1; i <= 7; i++) {
-      for (let j = 0; j < 6; j++) {
-        slots.push(i)
-      }
+  if (password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ error: "Password salah" })
+  }
+
+  const token = jwt.sign({ admin: true }, process.env.JWT_SECRET, {
+    expiresIn: "2h"
+  })
+
+  res.json({ token })
+})
+
+// GET SETTINGS
+router.get("/settings", authAdmin, async (req, res) => {
+  let settings = await Settings.findOne()
+  if (!settings) settings = await Settings.create({ groups: 7, maxPerGroup: 6 })
+
+  res.json(settings)
+})
+
+// UPDATE SETTINGS + REINIT SLOT
+router.post("/settings", authAdmin, async (req, res) => {
+  const { groups, maxPerGroup } = req.body
+
+  if (groups < 1 || maxPerGroup < 1) {
+    return res.status(400).json({ error: "Invalid settings" })
+  }
+
+  let settings = await Settings.findOne()
+  if (!settings) settings = new Settings()
+
+  settings.groups = groups
+  settings.maxPerGroup = maxPerGroup
+  await settings.save()
+
+  // regen slot
+  await Slot.deleteMany()
+
+  let slots = []
+  for (let i = 1; i <= groups; i++) {
+    for (let j = 0; j < maxPerGroup; j++) {
+      slots.push(i)
     }
-
-    shuffle(slots)
-
-    const data = slots.map((group, index) => ({
-      order: index,
-      group: group
-    }))
-
-    await Slot.insertMany(data)
-
-    res.json({ message: "Slots initialized" })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: "Init failed" })
   }
+
+  shuffleCrypto(slots)
+
+  const data = slots.map((g, idx) => ({
+    order: idx,
+    group: g,
+    taken: false
+  }))
+
+  await Slot.insertMany(data)
+
+  res.json({ message: "Settings updated & slots regenerated" })
 })
 
-// RESET
-router.post("/reset", async (req, res) => {
-  try {
-    await Student.deleteMany()
-    await Slot.deleteMany()
-    res.json({ message: "System reset" })
-  } catch (err) {
-    res.status(500).json({ error: "Reset failed" })
-  }
-})
+// RESET ALL
+router.post("/reset", authAdmin, async (req, res) => {
+  await Student.deleteMany()
+  await Slot.deleteMany()
+  await Device.deleteMany()
 
-// EXPORT EXCEL
-router.get("/export", async (req, res) => {
-  try {
-    const students = await Student.find().sort({ group: 1 })
-
-    const workbook = new ExcelJS.Workbook()
-    const sheet = workbook.addWorksheet("Kelompok")
-
-    sheet.columns = [
-      { header: "NIM", key: "nim" },
-      { header: "Kelompok", key: "group" }
-    ]
-
-    students.forEach(s => {
-      sheet.addRow({
-        nim: s.nim,
-        group: s.group
-      })
-    })
-
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-
-    await workbook.xlsx.write(res)
-    res.end()
-  } catch (err) {
-    res.status(500).json({ error: "Export failed" })
-  }
+  res.json({ message: "All data reset" })
 })
 
 module.exports = router
